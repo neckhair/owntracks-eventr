@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"os"
@@ -11,9 +12,38 @@ import (
 var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("TOPIC: %s\n", msg.Topic())
 	fmt.Printf("MSG: %s\n", msg.Payload())
+
+	res := TransitionMessage{}
+	json.Unmarshal([]byte(msg.Payload()), &res)
+
+	fmt.Printf("DESC: %s\n", res.Desc)
+	time := time.Unix(res.Tst, 0)
+	fmt.Printf("TIME: %s\n", time)
+
+	fmt.Println()
 }
 
-const topicName = "owntracks/+/+/event"
+const topicName string = "owntracks/+/+/event"
+
+type TransitionMessage struct {
+	Wtst  int64   // Time of waypoint creation
+	Lat   float32 // Latitude
+	Long  float32 // Longitude
+	Tst   int64   // Timestamp of transition
+	Acc   uint32  // Accuracy of Lat/Long
+	Tid   string  // Tracker ID
+	Event string  // Enter or Leave
+	Desc  string  // Description
+}
+
+func sampleMessage() string {
+	obj := &TransitionMessage{
+		Tst:   time.Now().Unix(),
+		Event: "enter",
+		Desc:  "Test Desc"}
+	msg, _ := json.Marshal(obj)
+	return string(msg)
+}
 
 func main() {
 	options := mqtt.NewClientOptions().AddBroker("tcp://localhost:1883")
@@ -34,17 +64,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	//Publish 5 messages to /go-mqtt/sample at qos 1 and wait for the receipt
+	//Publish 5 messages to the topic at qos 1 and wait for the receipt
 	//from the server after sending each message
 	for i := 0; i < 5; i++ {
-		text := fmt.Sprintf("this is msg #%d!", i)
+		text := sampleMessage()
 		token := client.Publish("owntracks/phil/iPhone/event", 0, false, text)
 		token.Wait()
+		time.Sleep(500 * time.Millisecond)
 	}
 
-	time.Sleep(3 * time.Second)
-
-	//unsubscribe from /go-mqtt/sample
+	//unsubscribe from topic
 	if token := client.Unsubscribe(topicName); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())
 		os.Exit(1)

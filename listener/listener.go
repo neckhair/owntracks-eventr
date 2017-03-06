@@ -1,4 +1,4 @@
-package main
+package listener
 
 import (
 	"encoding/json"
@@ -7,6 +7,19 @@ import (
 	"os"
 	"time"
 )
+
+const topicName string = "owntracks/+/+/event"
+
+type TransitionMessage struct {
+	Wtst  int64   // Time of waypoint creation
+	Lat   float32 // Latitude
+	Long  float32 // Longitude
+	Tst   int64   // Timestamp of transition
+	Acc   uint32  // Accuracy of Lat/Long
+	Tid   string  // Tracker ID
+	Event string  // Enter or Leave
+	Desc  string  // Description
+}
 
 //define a function for the default message handler
 var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -23,19 +36,6 @@ var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Println()
 }
 
-const topicName string = "owntracks/+/+/event"
-
-type TransitionMessage struct {
-	Wtst  int64   // Time of waypoint creation
-	Lat   float32 // Latitude
-	Long  float32 // Longitude
-	Tst   int64   // Timestamp of transition
-	Acc   uint32  // Accuracy of Lat/Long
-	Tid   string  // Tracker ID
-	Event string  // Enter or Leave
-	Desc  string  // Description
-}
-
 func sampleMessage() string {
 	obj := &TransitionMessage{
 		Tst:   time.Now().Unix(),
@@ -45,8 +45,8 @@ func sampleMessage() string {
 	return string(msg)
 }
 
-func main() {
-	options := mqtt.NewClientOptions().AddBroker("tcp://localhost:1883")
+func Listen(connectionString string) {
+	options := mqtt.NewClientOptions().AddBroker(connectionString)
 	options.SetClientID("eventr")
 	options.SetDefaultPublishHandler(f)
 
@@ -55,9 +55,6 @@ func main() {
 		panic(token.Error())
 	}
 	defer client.Disconnect(250)
-
-	fmt.Println("=== Welcome to the Owntracks Eventr ===")
-	fmt.Printf("I am listening for events on %s\n", options.Servers[0])
 
 	if token := client.Subscribe(topicName, 0, nil); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())

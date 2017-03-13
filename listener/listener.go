@@ -10,6 +10,7 @@ import (
 )
 
 type Listener struct {
+	client         mqtt.Client
 	TopicName      string
 	Url            string
 	OutputFilename string
@@ -48,35 +49,41 @@ func (l *Listener) MessageHandler() mqtt.MessageHandler {
 }
 
 func (l *Listener) Start() {
+	l.client = mqtt.NewClient(l.ClientOptions())
+	if token := l.client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	if token := l.client.Subscribe(l.TopicName, 0, nil); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+}
+
+// Unsubscribe from topic
+func (l *Listener) Stop() {
+	if token := l.client.Unsubscribe(l.TopicName); token.Wait() && token.Error() != nil {
+		// TODO replace with log
+		fmt.Println(token.Error())
+	}
+	l.client.Disconnect(250)
+}
+
+func (l *Listener) ClientOptions() *mqtt.ClientOptions {
 	options := mqtt.NewClientOptions().AddBroker(l.Url)
 	options.SetClientID("eventr")
 	options.SetDefaultPublishHandler(l.MessageHandler())
+	return options
+}
 
-	client := mqtt.NewClient(options)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-	defer client.Disconnect(250)
-
-	if token := client.Subscribe(l.TopicName, 0, nil); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
-		os.Exit(1)
-	}
-
-	//Publish 5 messages to the topic at qos 1 and wait for the receipt
-	//from the server after sending each message
-	for i := 0; i < 5; i++ {
-		fmt.Println("Publish sample message")
+//Publish sample messages to the topic at qos 1 and wait for the receipt
+//from the server after sending each message
+func (l *Listener) PublishExampleMessages(number int) {
+	for i := 0; i < number; i++ {
 		text := sampleMessage()
-		token := client.Publish("owntracks/phil/iPhone/event", 0, false, text)
+		token := l.client.Publish("owntracks/phil/iPhone/event", 0, false, text)
 		token.Wait()
 		time.Sleep(500 * time.Millisecond)
-	}
-
-	//unsubscribe from topic
-	if token := client.Unsubscribe(l.TopicName); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
-		os.Exit(1)
 	}
 }
 

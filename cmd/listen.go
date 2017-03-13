@@ -21,6 +21,9 @@ var listenCmd = &cobra.Command{
 
 		listener := listener.NewListener(&config)
 		listener.Start()
+		defer listener.Stop()
+
+		listener.PublishExampleMessages(5)
 	},
 }
 

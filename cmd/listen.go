@@ -8,12 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type listenCfg struct {
-	Url      string
-	Filename string
-}
-
-var config = listenCfg{}
+var config = listener.Configuration{}
 
 var listenCmd = &cobra.Command{
 	Use:   "listen",
@@ -24,7 +19,8 @@ var listenCmd = &cobra.Command{
 		fmt.Printf("Server:\t%s\n", config.Url)
 		fmt.Printf("Output:\t%s\n\n", config.Filename)
 
-		listener.Listen(config.Url)
+		listener := listener.NewListener(&config)
+		listener.Start()
 	},
 }
 

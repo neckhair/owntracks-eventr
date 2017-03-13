@@ -3,37 +3,81 @@ package listener
 import (
 	"encoding/json"
 	"fmt"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"os"
 	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-const topicName string = "owntracks/+/+/event"
-
-type TransitionMessage struct {
-	Wtst  int64   // Time of waypoint creation
-	Lat   float32 // Latitude
-	Long  float32 // Longitude
-	Tst   int64   // Timestamp of transition
-	Acc   uint32  // Accuracy of Lat/Long
-	Tid   string  // Tracker ID
-	Event string  // Enter or Leave
-	Desc  string  // Description
+type Listener struct {
+	TopicName      string
+	Url            string
+	OutputFilename string
 }
 
-//define a function for the default message handler
-var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("TOPIC: %s\n", msg.Topic())
-	fmt.Printf("MSG: %s\n", msg.Payload())
+func NewListener(config *Configuration) *Listener {
+	return &Listener{
+		TopicName:      "owntracks/+/+/event",
+		Url:            config.Url,
+		OutputFilename: config.Filename}
+}
 
-	res := TransitionMessage{}
-	json.Unmarshal([]byte(msg.Payload()), &res)
+func (l *Listener) MessageHandler() mqtt.MessageHandler {
+	return func(client mqtt.Client, msg mqtt.Message) {
+		tm, err := NewTransitionMessage(msg.Payload())
+		if err != nil {
+			// TODO replace with logfile
+			panic(err)
+		}
 
-	fmt.Printf("DESC: %s\n", res.Desc)
-	time := time.Unix(res.Tst, 0)
-	fmt.Printf("TIME: %s\n", time)
+		f, err := os.OpenFile(l.OutputFilename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			// TODO replace with logfile
+			panic(err)
+		}
 
-	fmt.Println()
+		defer f.Close()
+
+		lineToWrite := fmt.Sprintf("[%s] %s %s %s\n", tm.Timestamp(), msg.Topic(), tm.Event, tm.Desc)
+
+		if _, err = f.WriteString(lineToWrite); err != nil {
+			// TODO replace with logfile
+			panic(err)
+		}
+	}
+}
+
+func (l *Listener) Start() {
+	options := mqtt.NewClientOptions().AddBroker(l.Url)
+	options.SetClientID("eventr")
+	options.SetDefaultPublishHandler(l.MessageHandler())
+
+	client := mqtt.NewClient(options)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+	defer client.Disconnect(250)
+
+	if token := client.Subscribe(l.TopicName, 0, nil); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+
+	//Publish 5 messages to the topic at qos 1 and wait for the receipt
+	//from the server after sending each message
+	for i := 0; i < 5; i++ {
+		fmt.Println("Publish sample message")
+		text := sampleMessage()
+		token := client.Publish("owntracks/phil/iPhone/event", 0, false, text)
+		token.Wait()
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	//unsubscribe from topic
+	if token := client.Unsubscribe(l.TopicName); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
 }
 
 func sampleMessage() string {
@@ -43,36 +87,4 @@ func sampleMessage() string {
 		Desc:  "Test Desc"}
 	msg, _ := json.Marshal(obj)
 	return string(msg)
-}
-
-func Listen(connectionString string) {
-	options := mqtt.NewClientOptions().AddBroker(connectionString)
-	options.SetClientID("eventr")
-	options.SetDefaultPublishHandler(f)
-
-	client := mqtt.NewClient(options)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-	defer client.Disconnect(250)
-
-	if token := client.Subscribe(topicName, 0, nil); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
-		os.Exit(1)
-	}
-
-	//Publish 5 messages to the topic at qos 1 and wait for the receipt
-	//from the server after sending each message
-	for i := 0; i < 5; i++ {
-		text := sampleMessage()
-		token := client.Publish("owntracks/phil/iPhone/event", 0, false, text)
-		token.Wait()
-		time.Sleep(500 * time.Millisecond)
-	}
-
-	//unsubscribe from topic
-	if token := client.Unsubscribe(topicName); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
-		os.Exit(1)
-	}
 }

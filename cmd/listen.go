@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/neckhair/owntracks-eventr/listener"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var config = listener.Configuration{}
@@ -14,16 +15,21 @@ var listenCmd = &cobra.Command{
 	Use:   "listen",
 	Short: "Listen for events and write them into a file",
 	Long:  `Listen for events and write them into a file line by line.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("--> Listening for MQTT events\n")
-		fmt.Printf("Server:\t%s\n", config.Url)
-		fmt.Printf("Output:\t%s\n\n", config.Filename)
 
+	PreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("--> Listening for MQTT events\n")
+		fmt.Printf("Server:  %s\n", config.Url)
+		fmt.Printf("Output:  %s\n", config.Filename)
+		fmt.Printf("Logfile: %s\n\n", viper.GetString("LogFile"))
+	},
+
+	Run: func(cmd *cobra.Command, args []string) {
 		listener := listener.NewListener(&config)
 		listener.Start()
 		defer listener.Stop()
 
-		listener.PublishExampleMessages(5)
+		for {
+		}
 	},
 }
 

@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -11,6 +12,7 @@ import (
 )
 
 var cfgFile string
+var logFileHandler *os.File
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -18,6 +20,18 @@ var RootCmd = &cobra.Command{
 	Short: "Listens for MQTT events from Owntrack and logs them into a file",
 	Long: `owntracks-eventr listens on MQTT for events from Owntrack. It writes them
 into a log file where you can calculate times spent at a location.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		logFileHandler, err := os.OpenFile(viper.GetString("LogFile"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Println("Cannot open logfile!")
+			os.Exit(1)
+		}
+
+		log.SetOutput(logFileHandler)
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		logFileHandler.Close()
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -32,14 +46,9 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
+	RootCmd.PersistentFlags().StringP("logFile", "l", "/dev/stdout", "Log File path")
 
-	// RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.owntracks-eventr.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	viper.BindPFlag("logFile", RootCmd.PersistentFlags().Lookup("logFile"))
 }
 
 // initConfig reads in config file and ENV variables if set.

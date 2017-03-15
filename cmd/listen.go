@@ -7,6 +7,7 @@ import (
 	"github.com/neckhair/owntracks-eventr/listener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
 )
 
 var config = listener.Configuration{}
@@ -25,7 +26,11 @@ var listenCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		listener := listener.NewListener(&config)
-		listener.Start()
+
+		if err := listener.Start(); err != nil {
+			fmt.Println("Could not connect to MQTT server.")
+			log.Fatalln(err)
+		}
 		defer listener.Stop()
 
 		for {

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+
+	"github.com/neckhair/owntracks-eventr/utils"
 )
 
 type Listener struct {
@@ -26,44 +28,46 @@ func NewListener(config *Configuration) *Listener {
 func (l *Listener) MessageHandler() mqtt.MessageHandler {
 	return func(client mqtt.Client, msg mqtt.Message) {
 		tm, err := NewTransitionMessage(msg.Payload())
+
 		if err != nil {
-			// TODO replace with logfile
-			panic(err)
+			utils.Error("Failure while parsing payload.")
+			utils.Error(string(msg.Payload()))
+			return
 		}
 
 		f, err := os.OpenFile(l.OutputFilename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			// TODO replace with logfile
-			panic(err)
+			utils.Error("Cannot open output file to write event data.")
+			return
 		}
-
 		defer f.Close()
 
 		lineToWrite := fmt.Sprintf("[%s] %s %s %s\n", tm.Timestamp(), msg.Topic(), tm.Event, tm.Desc)
 
 		if _, err = f.WriteString(lineToWrite); err != nil {
-			// TODO replace with logfile
-			panic(err)
+			utils.Error("Error writing event data to file.")
+			return
 		}
 	}
 }
 
-func (l *Listener) Start() {
+func (l *Listener) Start() error {
 	l.client = mqtt.NewClient(l.ClientOptions())
 	if token := l.client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		return token.Error()
 	}
 
 	if token := l.client.Subscribe(l.TopicName, 0, nil); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
-		os.Exit(1)
+		return token.Error()
 	}
+
+	return nil
 }
 
 // Unsubscribe from topic
 func (l *Listener) Stop() {
 	if token := l.client.Unsubscribe(l.TopicName); token.Wait() && token.Error() != nil {
-		// TODO replace with log
+		utils.Error("Could not unsubscribe from MQTT topic.")
 		fmt.Println(token.Error())
 	}
 	l.client.Disconnect(250)

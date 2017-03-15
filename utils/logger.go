@@ -4,10 +4,10 @@ import (
 	"log"
 )
 
-func Debug(text string) {
-	log.Printf("[DEBUG] %s\n", text)
+func Debug(v ...interface{}) {
+	log.Printf("[DEBUG] %s\n", v)
 }
 
-func Error(text string) {
-	log.Printf("[ERROR] %s\n", text)
+func Error(v ...interface{}) {
+	log.Printf("[DEBUG] %s\n", v)
 }

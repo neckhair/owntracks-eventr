@@ -3,3 +3,8 @@
 # Owntracks Eventr
 
 Listens for Owntracks events on MQTT and writes them into a file for further processing.
+
+# Test on local machine
+
+    docker-compose up
+    go run main.go --insecure

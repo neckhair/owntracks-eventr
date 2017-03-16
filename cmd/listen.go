@@ -4,10 +4,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/neckhair/owntracks-eventr/listener"
+	"log"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
+
+	"github.com/neckhair/owntracks-eventr/listener"
 )
 
 var config = listener.Configuration{}
@@ -26,6 +28,7 @@ var listenCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		listener := listener.NewListener(&config)
+		listener.TLSConfig.InsecureSkipVerify = viper.GetBool("insecure")
 
 		if err := listener.Start(); err != nil {
 			fmt.Println("Could not connect to MQTT server.")
@@ -41,6 +44,9 @@ var listenCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(listenCmd)
 
-	listenCmd.Flags().StringVarP(&config.Url, "url", "u", "tcp://localhost:1883", "Connection string")
+	listenCmd.Flags().StringVarP(&config.Url, "url", "u", "tls://localhost:8883", "Connection string")
 	listenCmd.Flags().StringVarP(&config.Filename, "output", "o", "eventlog.txt", "Path to destination file")
+
+	listenCmd.Flags().Bool("insecure", false, "Skip TLS certificate verification")
+	viper.BindPFlag("insecure", listenCmd.Flags().Lookup("insecure"))
 }

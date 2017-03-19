@@ -3,7 +3,11 @@
 package cmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -28,7 +32,11 @@ var listenCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		listener := listener.NewListener(&config)
-		listener.TLSConfig.InsecureSkipVerify = viper.GetBool("insecure")
+
+		var err error
+		if listener.TLSConfig, err = tlsConfig(); err != nil {
+			log.Fatalln(err)
+		}
 
 		if err := listener.Start(); err != nil {
 			fmt.Println("Could not connect to MQTT server.")
@@ -49,4 +57,26 @@ func init() {
 
 	listenCmd.Flags().Bool("insecure", false, "Skip TLS certificate verification")
 	viper.BindPFlag("insecure", listenCmd.Flags().Lookup("insecure"))
+
+	listenCmd.Flags().String("ca-cert", "", "CA certificate file")
+	viper.BindPFlag("ca-cert", listenCmd.Flags().Lookup("ca-cert"))
+}
+
+func tlsConfig() (*tls.Config, error) {
+	certPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
+	}
+
+	if caCert, err := ioutil.ReadFile(viper.GetString("ca-cert")); err != nil {
+		return nil, errors.New("Could not read CA certificate.")
+	} else {
+		certPool.AppendCertsFromPEM(caCert)
+	}
+
+	config := tls.Config{
+		InsecureSkipVerify: viper.GetBool("insecure"),
+		RootCAs:            certPool}
+
+	return &config, nil
 }

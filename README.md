@@ -3,3 +3,26 @@
 # Owntracks Eventr
 
 Listens for Owntracks events on MQTT and writes them into a file for further processing.
+
+# Test on local machine
+
+    docker-compose up
+    go run main.go --ca-cert docker/ca.crt
+
+# Knowhow
+
+## How do I create CA and server certificates?
+
+It's all described in Mosquittos' man page: https://mosquitto.org/man/mosquitto-tls-7.html
+
+    # Generate CA Certificate (with -nodes for password-less key)
+    openssl req -new -x509 -extensions v3_ca -nodes -keyout ca.key -out ca.cr
+
+    # Generate un-encrypted server key
+    openssl genrsa -out server.key 2048
+
+    # Generate CSR
+    openssl req -out server.csr -key server.key -new
+
+    # Sign certificate
+    openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt

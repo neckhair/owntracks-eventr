@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -16,11 +17,13 @@ type Listener struct {
 	TopicName      string
 	Url            string
 	OutputFilename string
+	TLSConfig      *tls.Config
 }
 
 func NewListener(config *Configuration) *Listener {
 	return &Listener{
 		TopicName:      "owntracks/+/+/event",
+		TLSConfig:      &tls.Config{},
 		Url:            config.Url,
 		OutputFilename: config.Filename}
 }
@@ -77,6 +80,8 @@ func (l *Listener) ClientOptions() *mqtt.ClientOptions {
 	options := mqtt.NewClientOptions().AddBroker(l.Url)
 	options.SetClientID("eventr")
 	options.SetDefaultPublishHandler(l.MessageHandler())
+	options.SetTLSConfig(l.TLSConfig)
+
 	return options
 }
 

@@ -13,19 +13,18 @@ import (
 )
 
 type Listener struct {
-	client         mqtt.Client
-	TopicName      string
-	Url            string
-	OutputFilename string
-	TLSConfig      *tls.Config
+	client    mqtt.Client
+	Config    *Configuration
+	TopicName string
+	TLSConfig *tls.Config
 }
 
 func NewListener(config *Configuration) *Listener {
 	return &Listener{
-		TopicName:      "owntracks/+/+/event",
-		TLSConfig:      &tls.Config{},
-		Url:            config.Url,
-		OutputFilename: config.Filename}
+		TopicName: "owntracks/+/+/event",
+		Config:    config,
+		TLSConfig: &tls.Config{},
+	}
 }
 
 func (l *Listener) MessageHandler() mqtt.MessageHandler {
@@ -38,7 +37,7 @@ func (l *Listener) MessageHandler() mqtt.MessageHandler {
 			return
 		}
 
-		f, err := os.OpenFile(l.OutputFilename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		f, err := os.OpenFile(l.Config.Filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			utils.Error("Cannot open output file to write event data.")
 			return
@@ -77,10 +76,13 @@ func (l *Listener) Stop() {
 }
 
 func (l *Listener) ClientOptions() *mqtt.ClientOptions {
-	options := mqtt.NewClientOptions().AddBroker(l.Url)
+	options := mqtt.NewClientOptions().AddBroker(l.Config.Url)
 	options.SetClientID("eventr")
+	options.AutoReconnect = true
 	options.SetDefaultPublishHandler(l.MessageHandler())
 	options.SetTLSConfig(l.TLSConfig)
+	options.Username = l.Config.Username
+	options.Password = l.Config.Password
 
 	return options
 }

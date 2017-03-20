@@ -21,7 +21,12 @@ var config = listener.Configuration{}
 var listenCmd = &cobra.Command{
 	Use:   "listen",
 	Short: "Listen for events and write them into a file",
-	Long:  `Listen for events and write them into a file line by line.`,
+	Long: `Listen for events and write them into a file line by line.
+
+A password for MQTT can be provided in an environment variable named MQTT_PASSWORD.
+
+    MQTT_PASSWORD=secret owntracks-eventr listen -u eventr
+`,
 
 	PreRun: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("--> Listening for MQTT events\n")
@@ -31,6 +36,7 @@ var listenCmd = &cobra.Command{
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
+		config.Password = viper.GetString("password")
 		listener := listener.NewListener(&config)
 
 		var err error
@@ -52,8 +58,10 @@ var listenCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(listenCmd)
 
-	listenCmd.Flags().StringVarP(&config.Url, "url", "u", "tls://localhost:8883", "Connection string")
+	listenCmd.Flags().StringVarP(&config.Url, "url", "", "tls://localhost:8883", "Connection string")
 	listenCmd.Flags().StringVarP(&config.Filename, "output", "o", "eventlog.txt", "Path to destination file")
+	listenCmd.Flags().StringVarP(&config.Username, "username", "u", "", "MQTT Username")
+	viper.BindEnv("password", "MQTT_PASSWORD")
 
 	listenCmd.Flags().Bool("insecure", false, "Skip TLS certificate verification")
 	viper.BindPFlag("insecure", listenCmd.Flags().Lookup("insecure"))

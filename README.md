@@ -4,14 +4,19 @@
 
 Listens for Owntracks events on MQTT and writes them into a file for further processing.
 
-# Test on local machine
+## Test on local machine
 
+    # run a local pre-configured MQTT server in Docker
     docker-compose up
-    go run main.go --ca-cert docker/ca.crt
 
-# Knowhow
+    # compile and run the daemon
+    export MQTT_PASSWORD=secretpassword
+    go install
+    owntracks-eventr listen --ca-cert docker/ca.crt --username eventr
 
-## How do I create CA and server certificates?
+## Knowhow
+
+### How do I create CA and server certificates?
 
 It's all described in Mosquittos' man page: https://mosquitto.org/man/mosquitto-tls-7.html
 

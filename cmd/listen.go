@@ -52,8 +52,10 @@ var listenCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(listenCmd)
 
-	listenCmd.Flags().StringVarP(&config.Url, "url", "u", "tls://localhost:8883", "Connection string")
+	listenCmd.Flags().StringVarP(&config.Url, "url", "", "tls://localhost:8883", "Connection string")
 	listenCmd.Flags().StringVarP(&config.Filename, "output", "o", "eventlog.txt", "Path to destination file")
+	listenCmd.Flags().StringVarP(&config.Username, "username", "u", "", "MQTT Username")
+	listenCmd.Flags().StringVarP(&config.Password, "password", "p", "", "MQTT Password")
 
 	listenCmd.Flags().Bool("insecure", false, "Skip TLS certificate verification")
 	viper.BindPFlag("insecure", listenCmd.Flags().Lookup("insecure"))

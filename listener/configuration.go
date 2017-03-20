@@ -1,8 +1,8 @@
 package listener
 
-var config = Configuration{}
-
 type Configuration struct {
 	Url      string
 	Filename string
+	Username string
+	Password string
 }

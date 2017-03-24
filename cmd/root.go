@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
-var logFileHandler *os.File
+var (
+	cfgFile        string
+	logFileHandler *os.File
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -32,6 +35,13 @@ into a log file where you can calculate times spent at a location.`,
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		logFileHandler.Close()
 	},
+	Run: func(cmd *cobra.Command, args []string) {
+		if viper.GetBool("version") {
+			fmt.Printf("owntracks-eventr %s (%s-%s)\n", Version, runtime.GOOS, runtime.GOARCH)
+		} else {
+			cmd.Usage()
+		}
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -48,7 +58,10 @@ func init() {
 
 	RootCmd.PersistentFlags().StringP("logFile", "l", "/dev/stdout", "Log File path")
 
+	RootCmd.Flags().BoolP("version", "v", false, "Show version number and quit")
+
 	viper.BindPFlag("logFile", RootCmd.PersistentFlags().Lookup("logFile"))
+	viper.BindPFlag("version", RootCmd.Flags().Lookup("version"))
 }
 
 // initConfig reads in config file and ENV variables if set.

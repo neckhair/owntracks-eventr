@@ -1,10 +1,10 @@
 PACKAGE = github.com/neckhair/owntracks-eventr
 COMMIT_HASH = `git rev-parse --short HEAD 2>/dev/null`
 BUILD_DATE = `date +%FT%T%z`
-LDFLAGS = -ldflags "-X ${PACKAGE}/eventr.CommitHash=${COMMIT_HASH} -X ${PACKAGE}/eventr.BuildDate=${BUILD_DATE}"
+VERSION=`git describe --tags`
+LDFLAGS = -ldflags "-X ${PACKAGE}/cmd.CommitHash=${COMMIT_HASH} -X ${PACKAGE}/cmd.BuildDate=${BUILD_DATE} -X ${PACKAGE}/cmd.Version=${VERSION}"
 NOGI_LDFLAGS = -ldflags "-X ${PACKAGE}/eventr.BuildDate=${BUILD_DATE}"
 
-VERSION=`git describe --tags`
 
 .PHONY: build clean package
 .DEFAULT_GOAL := test
@@ -16,6 +16,7 @@ test:
 build:
 	mkdir -p build
 	GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o build/owntracks-eventr-linux-amd64 ${PACKAGE}
+	GOOS=darwin GOARCH=amd64 go build ${LDFLAGS} -o build/owntracks-eventr-darwin-amd64 ${PACKAGE}
 
 package: build
 	echo 2.0 > build/debian-binary

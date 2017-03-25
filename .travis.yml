@@ -1,4 +1,5 @@
 language: go
+sudo: required
 go:
 - 1.8.x
 notifications:
@@ -7,21 +8,17 @@ notifications:
     on_failure: change
 
 before_deploy:
-  - mkdir -p release
-  - GOOS=linux GOARCH=amd64 go build -o release/owntracks-eventr-linux-amd64 $(package)
-  - GOOS=linux GOARCH=386 go build -o release/owntracks-eventr-linux-386 $(package)
-  - GOOS=linux GOARCH=arm go build -o release/owntracks-eventr-linux-arm $(package)
-  - GOOS=darwin GOARCH=amd64 go build -o release/owntracks-eventr-darwin-amd64 $(package)
+  - make package
 
 deploy:
   provider: releases
   api_key:
     secure: LhKxk1SrkNv848HaTU/kJsmysOr0YwxEC38fMwegcogOEtrl5jRnFQrhnDn6AzRCPxvqmMMjyvTs2VBwopSkZz5OCs+vFPitruR8PlFzuXUDmo5uAT2oH2OLq3LNkXlJXQAqDh3mmae4slOSEJxN/CIwPkQBl0vyNxtDvoLgryuBiV7zHer2E1Yv5DHMdZH/0KZW5OK1qvRvxPO8h8TgxhH0HejlrHFQZOnOG7rM4XD/gXWiAyGlHk33KNg8ylE7v5CCHRB+TqFujNS0fulO0XemiJTd97SAzhnPK5HDujyRshanOtEbWQvOvaZD5bMwKIZVaW9Fd4sNb2jL6o0anwCcZilrNJHj+eyzxPSDy/AL/pG0B/fGm+Lw6JCQ2uYDPn2L2Mm0FlY4GWc604ccuN8HBCrbd+ne2usmaN+bcArSJizHEEMLfMBYO62MPl6Oak3ah0dy+nqbU4INGJa6JPigXWObiJY7EPMtJBGiiW96xdeH1j88nfLUAZ5O9l0D/hX1b0qomu9BZ7D5h9eKzQTqhV/huxu+VXR+wUpAgNWBSoAsJMnQW2vn2dCV4AviuZodqZeGkQ0vdF4HZQ69KwGnItANhPGWt7p7N5+dOE2fsdknjP99nS2uHKLzGp40x+v04j9p6DBd5oQLX68Qya8IxQ+zBJ5K3ng+5VOxHg8=
+  file_glob: true
   file:
-  - release/owntracks-eventr-linux-amd64
-  - release/owntracks-eventr-linux-386
-  - release/owntracks-eventr-linux-arm
-  - release/owntracks-eventr-darwin-amd64
+  - build/owntracks-eventr-linux-amd64
+  - build/owntracks-eventr.deb
+  overwrite: true
   on:
     repo: neckhair/owntracks-eventr
     tags: true

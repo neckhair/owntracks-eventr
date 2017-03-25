@@ -1,0 +1,7 @@
+---
+logfile: /dev/stdout
+url: tls://localhost:8883
+output: events.log
+username: eventr
+password: secretpassword
+ca-cert: docker/ca.crt

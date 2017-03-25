@@ -1,0 +1,9 @@
+[Unit]
+Description=Owntracks-Eventr
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/owntracks-eventr -c /etc/owntracks-eventr.yml listen
+
+[Install]
+WantedBy=multi-user.target

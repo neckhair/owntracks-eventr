@@ -1,0 +1,4 @@
+---
+logfile: /var/log/owntracks-eventr.log
+url: tcp://localhost:1883
+output: /var/lib/owntracks-eventr/events.log

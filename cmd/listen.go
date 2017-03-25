@@ -29,10 +29,15 @@ A password for MQTT can be provided in an environment variable named MQTT_PASSWO
 `,
 
 	PreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("--> Listening for MQTT events\n")
-		fmt.Printf("Server:  %s\n", config.Url)
-		fmt.Printf("Output:  %s\n", config.Filename)
-		fmt.Printf("Logfile: %s\n\n", viper.GetString("LogFile"))
+		config.Url = viper.GetString("url")
+		config.Filename = viper.GetString("output")
+		config.Username = viper.GetString("username")
+		config.Password = viper.GetString("password")
+
+		log.Printf("--> Listening for MQTT events\n")
+		log.Printf("Server:  %s\n", config.Url)
+		log.Printf("Output:  %s\n", config.Filename)
+		log.Printf("Logfile: %s\n\n", viper.GetString("LogFile"))
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -58,16 +63,19 @@ A password for MQTT can be provided in an environment variable named MQTT_PASSWO
 func init() {
 	RootCmd.AddCommand(listenCmd)
 
-	listenCmd.Flags().StringVarP(&config.Url, "url", "", "tls://localhost:8883", "Connection string")
-	listenCmd.Flags().StringVarP(&config.Filename, "output", "o", "eventlog.txt", "Path to destination file")
-	listenCmd.Flags().StringVarP(&config.Username, "username", "u", "", "MQTT Username")
-	viper.BindEnv("password", "MQTT_PASSWORD")
-
+	listenCmd.Flags().StringP("url", "", "tls://localhost:8883", "Connection string")
+	listenCmd.Flags().StringP("output", "o", "eventlog.txt", "Path to destination file")
+	listenCmd.Flags().StringP("username", "u", "", "MQTT Username")
 	listenCmd.Flags().Bool("insecure", false, "Skip TLS certificate verification")
-	viper.BindPFlag("insecure", listenCmd.Flags().Lookup("insecure"))
-
 	listenCmd.Flags().String("ca-cert", "", "CA certificate file")
+
+	viper.BindPFlag("url", listenCmd.Flags().Lookup("url"))
+	viper.BindPFlag("output", listenCmd.Flags().Lookup("output"))
+	viper.BindPFlag("username", listenCmd.Flags().Lookup("username"))
+	viper.BindPFlag("insecure", listenCmd.Flags().Lookup("insecure"))
 	viper.BindPFlag("ca-cert", listenCmd.Flags().Lookup("ca-cert"))
+
+	viper.BindEnv("password", "MQTT_PASSWORD")
 }
 
 func tlsConfig() (*tls.Config, error) {
@@ -76,10 +84,12 @@ func tlsConfig() (*tls.Config, error) {
 		return nil, err
 	}
 
-	if caCert, err := ioutil.ReadFile(viper.GetString("ca-cert")); err != nil {
-		return nil, errors.New("Could not read CA certificate.")
-	} else {
-		certPool.AppendCertsFromPEM(caCert)
+	if caCertPath := viper.GetString("ca-cert"); caCertPath != "" {
+		if caCert, err := ioutil.ReadFile(viper.GetString("ca-cert")); err != nil {
+			return nil, errors.New("Could not read CA certificate.")
+		} else {
+			certPool.AppendCertsFromPEM(caCert)
+		}
 	}
 
 	config := tls.Config{

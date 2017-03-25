@@ -10,9 +10,8 @@ Listens for Owntracks events on MQTT and writes them into a file for further pro
     docker-compose up
 
     # compile and run the daemon
-    export MQTT_PASSWORD=secretpassword
-    go install
-    owntracks-eventr listen --ca-cert docker/ca.crt --username eventr
+    go build
+    ./owntracks-eventr listen -c example/owntracks-eventr.yml
 
 ## Knowhow
 

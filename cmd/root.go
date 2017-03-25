@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
-var logFileHandler *os.File
+var (
+	logFileHandler *os.File
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -21,7 +23,7 @@ var RootCmd = &cobra.Command{
 	Long: `owntracks-eventr listens on MQTT for events from Owntrack. It writes them
 into a log file where you can calculate times spent at a location.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		logFileHandler, err := os.OpenFile(viper.GetString("LogFile"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		logFileHandler, err := os.OpenFile(viper.GetString("logfile"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			fmt.Println("Cannot open logfile!")
 			os.Exit(1)
@@ -31,6 +33,13 @@ into a log file where you can calculate times spent at a location.`,
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		logFileHandler.Close()
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		if viper.GetBool("version") {
+			fmt.Printf("owntracks-eventr %s (%s-%s)\n", Version, runtime.GOOS, runtime.GOARCH)
+		} else {
+			cmd.Usage()
+		}
 	},
 }
 
@@ -46,21 +55,22 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	RootCmd.PersistentFlags().StringP("logFile", "l", "/dev/stdout", "Log File path")
+	RootCmd.PersistentFlags().StringP("config", "c", "", "Config file path")
+	RootCmd.PersistentFlags().StringP("logfile", "l", "/dev/stdout", "Log File path")
 
-	viper.BindPFlag("logFile", RootCmd.PersistentFlags().Lookup("logFile"))
+	RootCmd.Flags().BoolP("version", "v", false, "Show version number and quit")
+
+	viper.BindPFlag("logfile", RootCmd.PersistentFlags().Lookup("logfile"))
+	viper.BindPFlag("config", RootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("version", RootCmd.Flags().Lookup("version"))
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
+	if configFile := viper.GetString("config"); configFile != "" {
+		viper.SetConfigFile(configFile)
 	}
 
-	viper.SetConfigName(".owntracks-eventr") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")             // adding home directory as first search path
-
-	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}

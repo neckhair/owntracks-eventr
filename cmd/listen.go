@@ -84,10 +84,12 @@ func tlsConfig() (*tls.Config, error) {
 		return nil, err
 	}
 
-	if caCert, err := ioutil.ReadFile(viper.GetString("ca-cert")); err != nil {
-		return nil, errors.New("Could not read CA certificate.")
-	} else {
-		certPool.AppendCertsFromPEM(caCert)
+	if caCertPath := viper.GetString("ca-cert"); caCertPath != "" {
+		if caCert, err := ioutil.ReadFile(viper.GetString("ca-cert")); err != nil {
+			return nil, errors.New("Could not read CA certificate.")
+		} else {
+			certPool.AppendCertsFromPEM(caCert)
+		}
 	}
 
 	config := tls.Config{

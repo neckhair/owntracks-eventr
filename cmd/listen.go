@@ -9,6 +9,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -55,8 +59,7 @@ A password for MQTT can be provided in an environment variable named MQTT_PASSWO
 		}
 		defer listener.Stop()
 
-		for {
-		}
+		waitForQuit()
 	},
 }
 
@@ -97,4 +100,19 @@ func tlsConfig() (*tls.Config, error) {
 		RootCAs:            certPool}
 
 	return &config, nil
+}
+
+func waitForQuit() {
+	var endWaiter sync.WaitGroup
+	endWaiter.Add(1)
+
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-signalChannel
+		endWaiter.Done()
+	}()
+
+	endWaiter.Wait()
 }

@@ -1,5 +1,5 @@
 [Unit]
-Description=Listens for MQTT events from Owntrack and logs them into a file
+Description=Owntracks-Eventr
 
 [Service]
 Type=simple

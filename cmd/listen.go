@@ -34,10 +34,10 @@ A password for MQTT can be provided in an environment variable named MQTT_PASSWO
 		config.Username = viper.GetString("username")
 		config.Password = viper.GetString("password")
 
-		fmt.Printf("--> Listening for MQTT events\n")
-		fmt.Printf("Server:  %s\n", config.Url)
-		fmt.Printf("Output:  %s\n", config.Filename)
-		fmt.Printf("Logfile: %s\n\n", viper.GetString("LogFile"))
+		log.Printf("--> Listening for MQTT events\n")
+		log.Printf("Server:  %s\n", config.Url)
+		log.Printf("Output:  %s\n", config.Filename)
+		log.Printf("Logfile: %s\n\n", viper.GetString("LogFile"))
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {

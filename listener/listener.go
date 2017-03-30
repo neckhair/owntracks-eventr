@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -68,9 +69,10 @@ func (l *Listener) Start() error {
 
 // Unsubscribe from topic
 func (l *Listener) Stop() {
+	log.Println("Disconnecting from broker.")
 	if token := l.client.Unsubscribe(l.TopicName); token.Wait() && token.Error() != nil {
 		utils.Error("Could not unsubscribe from MQTT topic.")
-		fmt.Println(token.Error())
+		log.Println(token.Error())
 	}
 	l.client.Disconnect(250)
 }

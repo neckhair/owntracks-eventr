@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -54,8 +53,7 @@ A password for MQTT can be provided in an environment variable named MQTT_PASSWO
 		}
 
 		if err := listener.Start(); err != nil {
-			fmt.Println("Could not connect to MQTT server.")
-			log.Fatalln(err)
+			log.Fatalf("Could not connect to MQTT server. %s\n", err)
 		}
 		defer listener.Stop()
 

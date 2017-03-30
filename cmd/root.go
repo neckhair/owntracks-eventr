@@ -23,7 +23,12 @@ var RootCmd = &cobra.Command{
 	Long: `owntracks-eventr listens on MQTT for events from Owntrack. It writes them
 into a log file where you can calculate times spent at a location.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		logFileHandler, err := os.OpenFile(viper.GetString("logfile"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		logfile := viper.GetString("logfile")
+		if logfile == "" {
+			return
+		}
+
+		logFileHandler, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			fmt.Println("Cannot open logfile!")
 			os.Exit(1)
@@ -32,7 +37,9 @@ into a log file where you can calculate times spent at a location.`,
 		log.SetOutput(logFileHandler)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		logFileHandler.Close()
+		if logFileHandler != nil {
+			logFileHandler.Close()
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.GetBool("version") {
@@ -56,7 +63,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringP("config", "c", "", "Config file path")
-	RootCmd.PersistentFlags().StringP("logfile", "l", "/dev/stdout", "Log File path")
+	RootCmd.PersistentFlags().StringP("logfile", "l", "", "Log File path")
 
 	RootCmd.Flags().BoolP("version", "v", false, "Show version number and quit")
 
@@ -73,5 +80,7 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		log.Fatalf("Error opening config file: %s\n", err)
 	}
 }

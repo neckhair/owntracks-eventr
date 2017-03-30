@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -79,7 +80,7 @@ func (l *Listener) Stop() {
 
 func (l *Listener) ClientOptions() *mqtt.ClientOptions {
 	options := mqtt.NewClientOptions().AddBroker(l.Config.Url)
-	options.SetClientID("eventr")
+	options.SetClientID(l.clientID())
 	options.AutoReconnect = true
 	options.SetDefaultPublishHandler(l.MessageHandler())
 	options.SetTLSConfig(l.TLSConfig)
@@ -98,6 +99,11 @@ func (l *Listener) PublishExampleMessages(number int) {
 		token.Wait()
 		time.Sleep(500 * time.Millisecond)
 	}
+}
+
+func (l *Listener) clientID() string {
+	pid := os.Getpid()
+	return "eventr-" + strconv.Itoa(pid)
 }
 
 func sampleMessage() string {

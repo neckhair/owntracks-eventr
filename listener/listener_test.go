@@ -18,7 +18,7 @@ func TestClientOptions(t *testing.T) {
 	clientOptions := listener.ClientOptions()
 	assert.Equal(t, "stinky", clientOptions.Username)
 	assert.Equal(t, "supersecret", clientOptions.Password)
-	assert.Equal(t, "eventr", clientOptions.ClientID)
+	assert.Regexp(t, `^eventr-\d*`, clientOptions.ClientID)
 	assert.Equal(t, true, clientOptions.AutoReconnect)
 	assert.Equal(t, "localhost:8883", clientOptions.Servers[0].Host)
 }
